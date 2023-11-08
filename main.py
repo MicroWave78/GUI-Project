@@ -2,9 +2,9 @@ import PySimpleGUI as sg
 import time as t
 
 
-sg.theme('darkpurple1')  # Choose a theme
+sg.theme('darkpurple1') 
 
-# Initialize variables
+
 click_count = 0
 click_value = 1
 click_upgrade = 1
@@ -25,7 +25,7 @@ def formatNum(number):
     else:
         return str(number)
 
-# Define the layout of the GUI
+
 layout = [
     [sg.Text('Click Count:', size=(15, 1)), sg.Text(click_count, size=(10, 1), key='COUNT')],
     [sg.Button('Click!', key='CLICK')],
@@ -36,10 +36,10 @@ layout = [
 ]
 
 
-# Create the window
+
 window = sg.Window('Clicker Game GUI', layout, size = (1000,500))
 
-# Event loop
+
 while True:
     event, values = window.read()
 
