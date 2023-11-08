@@ -2,19 +2,17 @@ import PySimpleGUI as sg
 import time as t
 import random as r
 
+sg.theme('darkbrown2') 
 
-sg.theme('darkpurple1') 
-
-
-font_name = 'Helvetica'
+sg.set_options(font=('Leelawadee', 12))
 click_count = 0
 click_value = 1 #click rate
 click_upgrade = 1 #click rate upgrade
 upgrade_cost = 25
-uc_rate = 8 #upgrade cost rate
+uc_rate = 8 #upgrade cost ++
 upgrade_level = 1
 
-
+# function to format big numbers
 def format_num(number):
     if abs(number) >= 1e15:
         return f'{number / 1/15:.2f}Q'
@@ -27,27 +25,48 @@ def format_num(number):
     elif abs(number) >= 1e3:
         return f'{number / 1e3:.2f}K'
     else:
-        return str(number)
+        return number
 
-
-layout = [
+# layout for menu window
+menu_layout = [
     [sg.Text('')],
-    [sg.Text('Click Count:', size=(15, 1), font= font_name), sg.Text(click_count, size=(10, 1), key='COUNT', font= font_name)],
-    [sg.Button('Click!', key='CLICK', size= (10, 1), font= font_name)],
-    [sg.Text('Click Value: ', size=(15, 1), font= font_name), sg.Text(click_value, size=(10, 1), key='VALUE', font= font_name)],
-    [sg.Button(f'Upgrade Click Value [Lv. {upgrade_level}] ({format_num(upgrade_cost)} clicks)', key='UPGRADE', font= font_name)],
-    [sg.Text('', key = 'COST')],
-    [sg.Button('Quit', size = (10, 1), font= font_name)]
+    [sg.Text(' ', size= (50,1)), sg.Text('Welcome To Clicker Game GUI\nBy Dragos Chelariu', font= ('Leelawadee', 14))]
 ]
 
+# layout for main game window
+layout = [
+    [sg.Text('')],
+    [sg.Text('Click Count:', size=(15, 1)), sg.Text(click_count, size=(10, 1), key='COUNT')],
+    [sg.Button('Click!', key='CLICK', size= (10, 1))],
+    [sg.Text('Click Value: ', size=(15, 1)), sg.Text(click_value, size=(10, 1), key='VALUE')],
+    [sg.Button(f'Upgrade Click Value [Lv. {upgrade_level}] ({format_num(upgrade_cost)} clicks)', key='UPGRADE')],
+    [sg.Text('', key = 'COST')],
+    [sg.Text('', size = (1, 18))],
+    [sg.Button('Exit Game', size = (10, 1))]
+]
 
-window = sg.Window('Clicker Game GUI', layout, size = (1200, 600), resizable= False, font= font_name)
-
+# open menu window
+menu_window = sg.Window('Clicker Game GUI', menu_layout, size = (1200, 600), resizable= False)  # menu window
+check_play = True   # variable to check if the user wants to play or exit
 
 while True:
+    event, values = menu_window.read()
+
+    if event in (sg.WIN_CLOSED, 'Exit Game'):
+        check_play = False
+        break
+
+
+
+menu_window.close()
+
+
+# open main game window
+window = sg.Window('Clicker Game GUI', layout, size = (1200, 600), resizable= False)    # main game window
+while check_play == True:
     event, values = window.read()
 
-    if event in (sg.WIN_CLOSED, 'Quit'):
+    if event in (sg.WIN_CLOSED, 'Exit Game'):
         break
 
     if event == 'CLICK':
@@ -71,6 +90,6 @@ while True:
             window['COUNT'].update(format_num(click_count))
             window['UPGRADE'].update(f'Upgrade Click Value [Lv. {upgrade_level}] ({format_num(upgrade_cost)} clicks)')
         else:
-            window['COST'].update('Not enough clicks.', font= font_name)
+            window['COST'].update('Not enough clicks.')
 
 window.close()
