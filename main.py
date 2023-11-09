@@ -22,16 +22,16 @@ champ = 0
 chall = 0
 
 # upgrades cost
-adventurer_cost = 25
-hero_cost = 300
-chall_cost = 1000
-champ_cost = 20000
+adventurer_cost = 50
+hero_cost = 30000
+chall_cost = 10000000
+champ_cost = 2000000000
 
 # upgrades click rate
-click_adventurer = 0
-click_hero = 0
-click_champ = 0
-click_chall = 0
+click_adventurer = 1
+click_hero = 1
+click_champ = 1
+click_chall = 1
 
 # function to format big numbers
 def format_num(number):
@@ -57,7 +57,7 @@ menu_layout = [
                                  sg.Text('Dragos Chelariu', font= ('Leelawadee', 15, 'italic'))],
 
     [sg.Text(' ')],
-    [sg.Text(' ', pad = (250,1)), sg.Button('Start Game', size= (15,2), button_color='silver', font= ('Leelawadee', 13,'bold'), key= 'Start')],
+    [sg.Text(' ', pad = (250,1)), sg.Button('Start Game', size= (15,2), mouseover_colors='lightgreen', button_color='silver', font= ('Leelawadee', 13,'bold'), key= 'Start')],
 
     [sg.Text(' ')],
     [sg.Text(' ', pad= (250,1)), sg.Button('Exit Game', size= (15,1), button_color= 'red', mouseover_colors='darkred', font= ('Leelawadee', 13))]
@@ -69,18 +69,18 @@ layout = [
     [sg.Text()],
     [sg.Text('', pad = (50,0)),sg.Text('AutoClickers:', font= ('Leelawadee', 14, 'bold'), background_color= '#4a87a8'), 
      sg.Text('', pad = (125,0)), sg.Text('Clicker Game GUI', font= ('Leelawadee', 16, 'bold'), background_color= '#e6a23e'),
-     sg.Text('', pad = (140,0)),sg.Text('Upgrades:', font= ('Leelawadee', 14, 'bold'), background_color= '#4a87a8')],
+     sg.Text('', pad = (140,0)),sg.Text('Upgrades:', font= ('Leelawadee', 14, 'bold'), background_color= 'silver', key= 'upv')],
 
     [sg.Text()],
     [sg.Text('', pad= (30,15)), sg.Text('- T1\t'), sg.Button(f'Purchase [{format_num(auto_cost)}]'), 
      sg.Text('', pad = (295,0)), sg.Text(f'- Adventurer:', background_color='#48addb', font=('Leelawadee', 13)), 
-     sg.Text(' 0', key= 'adv_value'),sg.Text(' '*4), 
+     sg.Text(' 0', key= 'adv_value'),sg.Text(' '*5), 
      sg.Button(f'Purchase [{format_num(adventurer_cost)}]', key= 'adventurer')],
 
     [sg.Text('', pad= (30,15)), sg.Text('- T2\t'), sg.Button(f'Purchase [{format_num(auto_cost*3)}]'),
      sg.Text('', pad= (115,1)), sg.Text('Click Count: ', font= ('Leelawadee', 14, 'bold')), sg.Text(click_count, font= ('Leelawadee', 14, 'bold'), size=(10, 1), key='COUNT'),
      sg.Text('', pad = (62,0)), sg.Text('- Hero:', background_color='#48db68', font=('Leelawadee', 13)), 
-     sg.Text(' 0', key= 'hero_value'), sg.Text(' '*16), 
+     sg.Text(' 0', key= 'hero_value'), sg.Text(' '*17), 
      sg.Button(f'Purchase [{format_num(hero_cost)}]', key= 'hero')],
 
     [sg.Text('', pad= (30,15)), sg.Text('- T3\t'), sg.Button(f'Purchase [{format_num(auto_cost*5)}]'),
@@ -94,14 +94,10 @@ layout = [
      sg.Text(' 0', key= 'champ_value'), sg.Text(' '*6), 
      sg.Button(f'Purchase [{format_num(champ_cost)}]', key= 'champion')],
 
-    [sg.Text('', pad= (0,120))],
-
-    [sg.Button('Exit Game', size = (10, 1))]
-
-
+    [sg.Text('', pad= (255,300)), sg.Button('Exit Game', size = (10, 1))]
 ]
 
-window = sg.Window('Clicker Game GUI', layout, size = (1200, 600), resizable= False)    # main game window
+window = sg.Window('Clicker Game GUI', layout, size = (1200, 600), resizable= True)    # main game window
 menu_window = sg.Window('Clicker Game GUI', menu_layout, size = (1200, 600), resizable= False)  # menu window
 
 check_play = True   # variable to check if the user wants to play or exit
@@ -137,71 +133,75 @@ while check_play == True:
         if click_count >= adventurer_cost:
 
             click_value -= adventurer
-            adventurer += r.randint(click_adventurer, click_adventurer+5)
-            click_adventurer += 1
+            adventurer += r.randint(click_adventurer, click_adventurer+40)
+            click_adventurer += 25
 
             click_value += adventurer
             click_count -= adventurer_cost
             
-            uc_rate += r.randint(15, 50)
+            uc_rate += r.randint(100, 1000)
             adventurer_cost += uc_rate
             
 
             window['COUNT'].update(format_num(click_count))
-            window['adv_value'].update(format_num(adventurer))
+            window['adv_value'].update(f' {format_num(adventurer)}')
             window['adventurer'].update(f'Upgrade [{format_num(adventurer_cost)}]')
+            window['upv'].update(f'Upgrades: {format_num(adventurer+hero+chall+champ)}')
 
 # hero upgrade
     elif event == 'hero':
         if click_count >= hero_cost:
 
             click_value -= hero
-            hero += r.randint(click_hero, click_hero+20)
-            click_hero += 10
+            hero += r.randint(click_hero, click_hero+80)
+            click_hero += 30
 
             click_value += hero
             click_count -= hero_cost
 
-            uc_rate += r.randint(15, 60)
+            uc_rate += r.randint(1000, 5000)
             hero_cost += uc_rate
 
             window['COUNT'].update(format_num(click_count))
-            window['hero_value'].update(format_num(hero))
+            window['hero_value'].update(f' {format_num(hero)}')
             window['hero'].update(f'Upgrade [{format_num(hero_cost)}]')
+            window['upv'].update(f'Upgrades: {format_num(adventurer+hero+chall+champ)}')
 
 # challanger upgrade
     elif event == 'challanger':
         if click_count >= chall_cost:
 
             click_value -= chall
-            chall += r.randint(click_chall, click_chall+40)
-            click_chall += 20
+            chall += r.randint(click_chall, click_chall+100)
+            click_chall += 80
 
             click_value += chall
             click_count -= chall_cost
 
-            uc_rate += r.randint(20, 80)
+            uc_rate += r.randint(5000, 10000)
             chall_cost += uc_rate
             
             window['COUNT'].update(format_num(click_count))
-            window['chall_value'].update(format_num(chall))
+            window['chall_value'].update(f' {format_num(chall)}')
             window['challanger'].update(f'Upgrade [{format_num(chall_cost)}]')
+            window['upv'].update(f'Upgrades: {format_num(adventurer+hero+chall+champ)}')
 
 # champion upgrade
     elif event == 'champion':
         if click_count >= champ_cost:
 
             click_value -= champ
-            champ += r.randint(click_champ, click_champ+50)
-            click_champ += 50
+            champ += r.randint(click_champ, click_champ+200)
+            click_champ += 300
 
             click_value += champ
             click_count -= champ_cost
 
-            uc_rate += r.randint(25, 100)
+            uc_rate += r.randint(10000, 1000000)
             champ_cost += uc_rate
 
             window['COUNT'].update(format_num(click_count))
-            window['champ_value'].update(format_num(champ))
+            window['champ_value'].update(f' {format_num(champ)}')
             window['champion'].update(f'Upgrade [{format_num(champ_cost)}]')
+            window['upv'].update(f'Upgrades: {format_num(adventurer+hero+chall+champ)}')
 window.close()
