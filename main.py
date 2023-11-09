@@ -8,12 +8,7 @@ sg.set_options(font=('Leelawadee', 12), element_padding=(0,0))
 # click related variables
 click_count = 0
 click_value = 1 #click rate
-click_upgrade = 1 #click rate upgrade
-upgrade_cost = 25
 uc_rate = 8 #upgrade cost ++
-upgrade_level = 1
-
-auto_cost = 1500
 
 # upgrades value
 adventurer = 0
