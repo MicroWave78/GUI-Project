@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
-import time 
 import random as r
+import subprocess as sub
 
 sg.theme('darkbrown2') 
 sg.set_options(font=('Leelawadee', 12), element_padding=(0,0))
@@ -15,7 +15,6 @@ adventurer = 0
 hero = 0
 champ = 0
 chall = 0
-
 
 # upgrades cost
 adventurer_cost = 50
@@ -36,15 +35,16 @@ T3_cost = 25000000000
 T4_cost = 1000000000000
 
 # currency
-diamonds = 0    # alt+4  ♦
+diamonds = 0    # ❖
 count = 0
-random_count = r.randint(1,100) # when to trigger diamond +1 (line 157)
-multi = diamonds*0.2    # multiplier for each diamond
+random_count = r.randint(1, 200) # when to trigger diamond +1 
+multi = diamonds*2   # multiplier for each diamond
 
 # boss variables
 boss_hp = 10
-boss_trigger = r.randint(1,10)
+boss_trigger = r.randint(1,20)
 boss_click_count = 0
+
 
 # function to format big numbers
 def format_num(number):
@@ -61,18 +61,10 @@ def format_num(number):
     else:
         return number
     
-def get_gif_data(filename):
-    try:
-        with open(filename, "rb") as file:
-            return file.read()
-    except FileNotFoundError:
-        print(f"File not found: {filename}")
-        return b""
 
 # layout for menu window
 menu_layout = [
 
-    [sg.Image(key='gif')],
     [sg.Text(' ', size= (1,8))],
 
     [sg.Text(' ', pad= (225,1)), sg.Text('Welcome To Clicker Game GUI', font= ('Leelawadee', 15, 'bold'))],
@@ -143,15 +135,12 @@ while True:
     if event == 'Start':
         break
 
-    
-
 menu_window.close()
 
 
 # open main game window
 while check_play == True:
-
-    total_u = adventurer+hero+chall+champ
+    
     # changes color of CLICK button to random
     colors = ["#"+''.join([r.choice('0123456789ABCDEF') for j in range(6)])
              for i in range(50)]
@@ -163,34 +152,48 @@ while check_play == True:
         break
 
     if boss_click_count == boss_trigger:
+        sg.theme(r.choice(sg.theme_list()))
         # boss window layout
         boss_layout = [
-            [sg.ProgressBar(boss_hp, 'h', size=(20, 5), key='bossHP'),
-             sg.Text(f'{boss_hp}', key='bossHPvalue')],
-            [sg.Button('Attack')]
+            [sg.Text('', pad= (60,30)),
+             sg.ProgressBar(boss_hp, 'h', size=(20, 5), key='bossHP'),
+             sg.Text(f' HP Left: {format_num(boss_hp)}', key='bossHPvalue')],
+            [sg.Text('', pad= (110,30)),
+             sg.Button(f'Attack! [{format_num(click_value)}]', auto_size_button=True, key = 'Attack')],
+            [sg.Text('', pad= (250,50)),sg.Button('Surrender', button_color= 'red')]
         ]
-
-        boss_window = sg.Window('Boss Fight', boss_layout, size=(600, 300))     # boss window
+        
+        boss_window = sg.Window('Boss Fight', boss_layout, size=(600, 300), resizable= False)     # boss window
         while True:
             event, values = boss_window.read()
 
             if event == 'Attack':
                 boss_hp -= click_value
                 boss_window['bossHP'].update(boss_hp)
-                boss_window['bossHPvalue'].update(boss_hp)
+                boss_window['bossHPvalue'].update(f' HP Left: {format_num(boss_hp)}')
             
             if boss_hp <= 0:
+                boss_reward = r.randint(diamonds+5, diamonds+40)
+                sg.popup(f"You beat the boss! Here's {boss_reward} diamonds", auto_close=True, no_titlebar= True, auto_close_duration= 1, button_type= 5)
+                diamonds += boss_reward
+                window['diamonds'].update(f'❖{format_num(diamonds)}', font=('Leelawadee', 15), text_color= 'aqua')
+                sg.theme('darkbrown2')
+                break
+
+            if event in (sg.WIN_CLOSED, 'Surrender'):
+                sg.theme('darkbrown2')
                 break
 
         boss_click_count = 0    
         boss_trigger = r.randint(1,200)
-        boss_hp = r.randint(click_value*30, click_value*100)
+        boss_hp = r.randint(int(click_value)*30, int(click_value)*200)
         boss_window.close()
 
     if count == random_count:
-        diamonds +=1
+        diamonds_win = r.randint(1,100)
+        diamonds += diamonds_win
         
-        sg.popup('You found a diamond!', text_color='aqua', auto_close= True, no_titlebar= True, auto_close_duration= 0.8, button_type= 5)
+        sg.popup(f'You found {diamonds_win} diamonds!', text_color='aqua', auto_close= True, no_titlebar= True, auto_close_duration= 0.8, button_type= 5)
         count = 0
         random_count = r.randint(1,100)
         window['diamonds'].update(f'❖{format_num(diamonds)}', font=('Leelawadee', 15), text_color= 'aqua')
