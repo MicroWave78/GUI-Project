@@ -3,6 +3,7 @@ import random as r
 import time as t
 import multiprocessing as mp
 import concurrent.futures
+import itertools
 
 sg.theme('darkbrown2') 
 sg.set_options(font=('Leelawadee', 12), element_padding=(0,0), keep_on_top= True)
@@ -98,7 +99,10 @@ class Autos:
     def auto(T):
         while True:
             Var.click_count += T
+            window['COUNT'].update(f'{format_num(Var.click_count)}')
             t.sleep(1)
+            if Main.event in (sg.WIN_CLOSED, 'Exit Game'):
+                break
 
 class Menu:
     check_play = True
@@ -118,7 +122,7 @@ class Menu:
 class Main:
     
     def main_window(layout, window):
-        executor = concurrent.futures.ProcessPoolExecutor(4)
+        
 
         while Menu.check_play == True:
             event, values = window.read()
@@ -285,7 +289,9 @@ class Main:
                     window['CLICK'].update(f'Click!\n[{format_num(Var.click_value)}]')
 
             elif event == 'T1up':
+                executor = concurrent.futures.ProcessPoolExecutor(1)
                 futures = executor.submit(Autos.auto, Var.T1)
+                concurrent.futures.wait(futures)
                 
 
         # diamonds trigger
