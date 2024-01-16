@@ -2,10 +2,13 @@ import PySimpleGUI as sg
 import random as r
 import time as t
 import concurrent.futures
+import itertools
+from threading import Thread
 
 sg.theme('darkbrown2') 
 sg.set_options(font=('Leelawadee UI', 12), element_padding=(0,0), keep_on_top= True)
-
+next_multi_value = 1
+level = 0
 # function to format big numbers
 def format_num(number):
     
@@ -45,7 +48,7 @@ class Var:
     uc_rate = 8 #upgrade cost ++
 
     # upgrades cost
-    basic_cost = 50
+    basic_cost = 1
     adept_cost = 30000  # 30K
     rare_cost = 100000000   # 1M
     mythic_cost = 20000000000   # 20B
@@ -76,6 +79,9 @@ class Var:
     T2 = 0
     T3 = 0
     T4 = 0
+    T5 = 0
+    T6 = 0
+    T7 = 0
 
     # currency
     diamonds = 0    # ❖
@@ -92,52 +98,75 @@ class Var:
     random_crit = r.randint(1,100)  # when to trigger crit (click value x10)
 
 class Upgrade:
-    tiers = {'basic':[Var.basic_cost, Var.basic, Var.click_basic, 'basic_value'],
-            'adept':[Var.adept_cost, Var.adept, Var.click_adept, 'adept_value'],
-            'rare':[Var.rare_cost, Var.rare, Var.click_rare, 'rare_value'],
-            'mythic':[Var.mythic_cost, Var.mythic, Var.click_mythic, 'mythic_value'],
-            'astral':[Var.astral_cost, Var.astral, Var.click_astral, 'astral_value'],
-            'celestial':[Var.celestial_cost, Var.celestial, Var.click_celestial, 'celestial_value'],
-            'ethereal':[Var.eth_cost, Var.ethereal, Var.click_eth, 'eth_value']}
+    
+    tiers = {'basic':[Var.basic_cost, Var.basic, Var.click_basic, 'basic_value', Var.click_basic+1, Var.click_basic+40, 25, 200],
+            'adept':[Var.adept_cost, Var.adept, Var.click_adept, 'adept_value', Var.click_adept+50, Var.click_adept+400, 100, 400],
+            'rare':[Var.rare_cost, Var.rare, Var.click_rare, 'rare_value', Var.click_rare+500, Var.click_rare+2500, 5000, 600],
+            'mythic':[Var.mythic_cost, Var.mythic, Var.click_mythic, 'mythic_value', Var.click_mythic+3000, Var.click_mythic+8e3, 100e3, 800],
+            'astral':[Var.astral_cost, Var.astral, Var.click_astral, 'astral_value', Var.click_astral+10e3, Var.click_astral+300e3, 500e3, 1500],
+            'celestial':[Var.celestial_cost, Var.celestial, Var.click_celestial, 'celestial_value', Var.click_celestial+500e3, Var.click_celestial+900e3, 1e6, 3000],
+            'ethereal':[Var.eth_cost, Var.ethereal, Var.click_eth, 'eth_value', Var.click_eth+1e6, Var.click_eth+500e6, 50e6, 5000]}
+    
     
     def Template(event, upgrade):
+        global level
         if event == upgrade:
             
+            level += next_multi_value
+            print(level)
             if Var.click_value == 1:
                 Var.click_value = 0 # because it was always +1
-                
-            if Var.click_count >= Upgrade.tiers[upgrade][0]:
+
+            if Var.click_count >= Upgrade.tiers[upgrade][0] * next_multi_value:
 
                 Var.click_value -= Upgrade.tiers[upgrade][1]
-                Upgrade.tiers[upgrade][1] += r.randint(Upgrade.tiers[upgrade][2]+1, Upgrade.tiers[upgrade][2]+40)
-                Upgrade.tiers[upgrade][2] += 25
+                Upgrade.tiers[upgrade][1] += r.randint(Upgrade.tiers[upgrade][4], Upgrade.tiers[upgrade][5]) *next_multi_value
+                Upgrade.tiers[upgrade][2] += Upgrade.tiers[upgrade][6] * next_multi_value
 
                 Var.click_value += Upgrade.tiers[upgrade][1]
                 Var.click_count -= Upgrade.tiers[upgrade][0]
                 
-                Var.uc_rate += r.randint(100, 700)
-                Upgrade.tiers[upgrade][0] += Var.uc_rate
+                Var.uc_rate += r.randint(100, Upgrade.tiers[upgrade][7]) * next_multi_value
+                Upgrade.tiers[upgrade][0] += Var.uc_rate * next_multi_value
                 
 
                 window['COUNT'].update(format_num(Var.click_count))
                 window[Upgrade.tiers[upgrade][3]].update(f'{format_num(Upgrade.tiers[upgrade][1])}')
-                window[upgrade].update(f'Upgrade [{format_num(Upgrade.tiers[upgrade][0])}]')
+                window[upgrade].update(f'Upgrade [{format_num(Upgrade.tiers[upgrade][0] * next_multi_value)}]', disabled=(True if Var.click_count < Upgrade.tiers[upgrade][0] else False))
                 window['CLICK'].update(f'Click!\n[{format_num(Var.click_value)}]')
                 
                 
+    def upgradeTimes(event, button):
+        global next_multi_value
+        if event == button:
+            multi = {'x1': 1,
+                    'x5': 5,
+                    'x10': 10,
+                    'x100': 100}
+
+            keys = list(multi.keys())
+            next_multi_index = (keys.index(window[button].ButtonText) + 1) % len(keys)
+            next_multi_text = keys[next_multi_index]
+            next_multi_value = multi[next_multi_text]
+            window[button].update(next_multi_text)
+            
+            for upgrade in Upgrade.tiers:
+                cost = Upgrade.tiers[upgrade][0] * next_multi_value
+                window[upgrade].update(f'Upgrade [{format_num(cost)}]', disabled=(True if Var.click_count < cost else False))
+
 class Autos:
-    tiers = [Var.T1, Var.T2, Var.T3, Var.T4]
-    def auto(T):
-        while True:
-            Var.click_count += T
-            window['COUNT'].update(f'{format_num(Var.click_count)}')
-            t.sleep(1)
-            if Main.event in (sg.WIN_CLOSED, 'Exit Game'):
-                break
+    def autoclick(event):
+        tiers = [Var.T1, Var.T2, Var.T3, Var.T4, Var.T5, Var.T6, Var.T7]
+        for T in tiers:
+            while T > 0:
+                Var.click_count += T
+                window['COUNT'].update(f'{format_num(Var.click_count)}')
+                t.sleep(1)
+                if event in (sg.WIN_CLOSED, 'Exit Game'):
+                    break
 
 class Menu:
     check_play = True
-
     def menu_window(menu_layout, menu_window):
         
         while True:
@@ -156,6 +185,7 @@ class Main:
                 
         while Menu.check_play == True:
             event, values = window.read()
+            
             # changes color of CLICK button to random
             colors = ["#"+''.join([r.choice('0123456789ABCDEF') for j in range(6)]) for i in range(50)]
             color_r = r.choice(colors)
@@ -174,19 +204,20 @@ class Main:
                 Var.count += 1  # clicks to diamond trigger
                 Var.boss_click_count += 1
                 Var.click_crit += 1
-                print(Var.boss_click_count)
-                print(Var.boss_trigger)
 
                 window['COUNT'].update(format_num(Var.click_count))
-                window['CLICK'].update(f'Click!\n[{format_num(Var.click_value)}]', button_color= color_r)
+                window['CLICK'].update(button_color= color_r)
             
             if Var.boss_click_count == Var.boss_trigger:
                 Boss.start_window()
             
             for upgrade in Upgrade.tiers:
+                window[upgrade].update(disabled=(True if Var.click_count < Upgrade.tiers[upgrade][0] * next_multi_value else False))
                 if event == upgrade:
                     Upgrade.Template(event, upgrade)
-
+                    
+            Upgrade.upgradeTimes(event, 'multi')
+            
         # diamonds trigger
             if Var.count == Var.random_count:
                 diamonds_win = r.randint(1,100)
@@ -208,7 +239,7 @@ class Boss:
         boss_layout = [
             [sg.Text(pad=(0,1))],
             [sg.Text(pad = (110,0)),
-             sg.Text(f'{boss_name}', background_color = sg.theme_button_color_background())],
+            sg.Text(f'{boss_name}', text_color = sg.theme_text_color())],
 
             [sg.Text('', pad= (60,0)),
             sg.ProgressBar(Var.boss_hp, 'h', size=(25, 7), key='bossHP'),
@@ -275,37 +306,37 @@ upgrades_column = [
     [sg.Text(pad=(0,15)),
     sg.Text(f'- Basic:', background_color='#4F3727', font=('Leelawadee UI', 13)),
     sg.Text(' 0', key= 'basic_value'),sg.Text('  '*7),
-    sg.Button(f'Purchase [{format_num(Var.basic_cost)}]',disabled=[True if Var.click_count < Var.basic_cost else False], auto_size_button=True, key= 'basic')],
+    sg.Button(f'Upgrade [{format_num(Var.basic_cost)}]', auto_size_button=True, key= 'basic', disabled = True, expand_x=False)],
 
     [sg.Text(pad=(0,15)),
     sg.Text('- Adept:', background_color='#48a8d0', font=('Leelawadee UI', 13)), 
     sg.Text(' 0', key= 'adept_value'), sg.Text('  '*6),
-    sg.Button(f'Purchase [{format_num(Var.adept_cost)}]', auto_size_button=True, key= 'adept')],
+    sg.Button(f'Upgrade [{format_num(Var.adept_cost)}]', auto_size_button=True, key= 'adept', disabled = True)],
 
     [sg.Text(pad=(0,15)),
     sg.Text('- Rarefinder:',background_color='#12674a', font=('Leelawadee UI', 13)), 
     sg.Text(' 0', key= 'rare_value'), sg.Text(' '*4), 
-    sg.Button(f'Purchase [{format_num(Var.rare_cost)}]', auto_size_button=True, key= 'rare')],
+    sg.Button(f'Upgrade [{format_num(Var.rare_cost)}]', auto_size_button=True, key= 'rare', disabled = True)],
 
     [sg.Text(pad=(0,15)),
     sg.Text('- Mythic:', background_color='#7851A9', font=('Leelawadee UI', 13)), 
     sg.Text(' 0', key= 'mythic_value'), sg.Text(' '*11), 
-    sg.Button(f'Purchase [{format_num(Var.mythic_cost)}]',auto_size_button=True, key= 'mythic')],
+    sg.Button(f'Upgrade [{format_num(Var.mythic_cost)}]',auto_size_button=True, key= 'mythic', disabled = True)],
 
     [sg.Text(pad=(0,15)),
     sg.Text('- Astral:', background_color='#4B0082', font=('Leelawadee UI', 13)), 
     sg.Text(' 0', key= 'astral_value'), sg.Text(' '*13), 
-    sg.Button(f'Purchase [{format_num(Var.astral_cost)}]',auto_size_button=True, key= 'astral')],
+    sg.Button(f'Upgrade [{format_num(Var.astral_cost)}]',auto_size_button=True, key= 'astral', disabled = True)],
 
     [sg.Text(pad=(0,15)),
     sg.Text('- Celestial:', background_color='#FFD700', font=('Leelawadee UI', 13), text_color='black'), 
     sg.Text(' 0', key= 'celestial_value'), sg.Text(' '*8), 
-    sg.Button(f'Purchase [{format_num(Var.celestial_cost)}]',auto_size_button=True, key= 'celestial')],
+    sg.Button(f'Upgrade [{format_num(Var.celestial_cost)}]',auto_size_button=True, key= 'celestial', disabled = True)],
 
     [sg.Text(pad=(0,15)),
     sg.Text('- Ethereal:', background_color='#FFFFFF', font=('Leelawadee UI', 13), text_color='black'), 
     sg.Text(' 0', key= 'eth_value'), sg.Text(' '*8), 
-    sg.Button(f'Purchase [{format_num(Var.eth_cost)}]',auto_size_button=True, key= 'ethereal')],
+    sg.Button(f'Upgrade [{format_num(Var.eth_cost)}]',auto_size_button=True, key= 'ethereal', disabled = True)],
 ]
 
 autos_column = [
@@ -336,9 +367,11 @@ clicker_column = [
 
 layout = [
     [sg.Text(pad=(0,5))],
-    [sg.Text('', pad = (40,0)),sg.Text('AutoClickers:', font= ('Leelawadee UI', 14, 'bold'), background_color= '#4a87a8'),
-    sg.Text('', pad = (132,0)), sg.Text('Clicker Game GUI', font= ('Leelawadee UI', 16, 'bold'), background_color= '#e6a23e'),
-    sg.Text('', pad = (140,0)),sg.Text('Upgrades', font= ('Leelawadee UI', 14, 'bold'), background_color= '#bb8af2', key= 'upv')],
+    [sg.Text('', pad = (40,0)),sg.Text('AutoClickers', font= ('Leelawadee UI', 14, 'bold'), background_color= '#4a87a8'),
+    sg.Text('', pad = (135,0)), sg.Text('Clicker Game GUI', font= ('Leelawadee UI', 16, 'bold'), background_color= '#e6a23e'),
+    sg.Text('', pad = (135,0)),sg.Text('Upgrades', font= ('Leelawadee UI', 14, 'bold'), background_color= '#bb8af2', key= 'upv'),
+    sg.Text(pad = (10,0)),
+    sg.Button('x1', key='multi', auto_size_button=True, size = (5,1))],
 
     [sg.Text()],
     [sg.HorizontalSeparator()],
