@@ -48,7 +48,7 @@ class Var:
     uc_rate = 8 #upgrade cost ++
 
     # upgrades cost
-    basic_cost = 1
+    basic_cost = 50
     adept_cost = 30000  # 30K
     rare_cost = 100000000   # 1M
     mythic_cost = 20000000000   # 20B
