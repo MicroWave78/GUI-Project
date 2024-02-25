@@ -1,14 +1,13 @@
 import PySimpleGUI as sg
 import random as r
 import time as t
-import concurrent.futures
-import itertools
-from threading import Thread
+import multiprocessing as mp
 
 sg.theme('darkbrown2') 
 sg.set_options(font=('Leelawadee UI', 12), element_padding=(0,0), keep_on_top= True)
+
 next_multi_value = 1
-level = 0
+
 # function to format big numbers
 def format_num(number):
     
@@ -48,13 +47,13 @@ class Var:
     uc_rate = 8 #upgrade cost ++
 
     # upgrades cost
-    basic_cost = 1
-    adept_cost = 30000  # 30K
-    rare_cost = 100000000   # 1M
-    mythic_cost = 20000000000   # 20B
-    astral_cost = 100000000000  # 100B
-    celestial_cost = 500000000000   # 500B
-    eth_cost = 1000000000000    # 1T
+    basic_cost = 50
+    adept_cost = 3e4  # 30K
+    rare_cost = 1e8   # 1M
+    mythic_cost = 2e10   # 20B
+    astral_cost = 1e11  # 100B
+    celestial_cost = 5e11   # 500B
+    eth_cost = 1e12    # 1T
 
     # upgrades click rate
     click_basic = 1
@@ -86,8 +85,7 @@ class Var:
     # currency
     diamonds = 0    # ❖
     count = 0
-    random_count = r.randint(1, 200) # when to trigger diamond +1 
-    multi = diamonds*2   # multiplier for each diamond
+    random_count = r.randint(1, 200) # when to trigger diamond +
 
     # boss variables
     boss_hp = 10
@@ -107,34 +105,27 @@ class Upgrade:
             'celestial':[Var.celestial_cost, Var.celestial, Var.click_celestial, 'celestial_value', Var.click_celestial+500e3, Var.click_celestial+900e3, 1e6, 3000],
             'ethereal':[Var.eth_cost, Var.ethereal, Var.click_eth, 'eth_value', Var.click_eth+1e6, Var.click_eth+500e6, 50e6, 5000]}
     
-    
     def Template(event, upgrade):
-        global level
-        if event == upgrade:
-            
-            level += next_multi_value
-            print(level)
+         if event == upgrade:
             if Var.click_value == 1:
                 Var.click_value = 0 # because it was always +1
 
             if Var.click_count >= Upgrade.tiers[upgrade][0] * next_multi_value:
 
                 Var.click_value -= Upgrade.tiers[upgrade][1]
-                Upgrade.tiers[upgrade][1] += r.randint(Upgrade.tiers[upgrade][4], Upgrade.tiers[upgrade][5]) *next_multi_value
+                Upgrade.tiers[upgrade][1] += r.randint(Upgrade.tiers[upgrade][4] * next_multi_value, Upgrade.tiers[upgrade][5] * next_multi_value) 
                 Upgrade.tiers[upgrade][2] += Upgrade.tiers[upgrade][6] * next_multi_value
-
+                
                 Var.click_value += Upgrade.tiers[upgrade][1]
                 Var.click_count -= Upgrade.tiers[upgrade][0]
                 
                 Var.uc_rate += r.randint(100, Upgrade.tiers[upgrade][7]) * next_multi_value
                 Upgrade.tiers[upgrade][0] += Var.uc_rate * next_multi_value
-                
-
+            
                 window['COUNT'].update(format_num(Var.click_count))
                 window[Upgrade.tiers[upgrade][3]].update(f'{format_num(Upgrade.tiers[upgrade][1])}')
                 window[upgrade].update(f'Upgrade [{format_num(Upgrade.tiers[upgrade][0] * next_multi_value)}]', disabled=(True if Var.click_count < Upgrade.tiers[upgrade][0] else False))
                 window['CLICK'].update(f'Click!\n[{format_num(Var.click_value)}]')
-                
                 
     def upgradeTimes(event, button):
         global next_multi_value
@@ -154,21 +145,24 @@ class Upgrade:
                 cost = Upgrade.tiers[upgrade][0] * next_multi_value
                 window[upgrade].update(f'Upgrade [{format_num(cost)}]', disabled=(True if Var.click_count < cost else False))
 
-class Autos:
-    def autoclick(event):
-        tiers = [Var.T1, Var.T2, Var.T3, Var.T4, Var.T5, Var.T6, Var.T7]
-        for T in tiers:
-            while T > 0:
-                Var.click_count += T
-                window['COUNT'].update(f'{format_num(Var.click_count)}')
-                t.sleep(1)
-                if event in (sg.WIN_CLOSED, 'Exit Game'):
-                    break
-
+# class Autos:
+#     tiers = {'T1up' : [Var.T1, Var.T1_cost],  
+#              'T2up' : [Var.T2, Var.T2_cost], 
+#              'T3up' : [Var.T3, Var.T3_cost], 
+#              'T4up' : [Var.T4, Var.T4_cost], 
+#              'T5up' : [Var.T5, Var.T5_cost], 
+#              'T6up' : [Var.T6, Var.T6_cost], 
+#              'T7up' : [Var.T7, Var.T7_cost]}
+#     def autoclick(event, T):    
+#             for tier in Autos.tiers:
+#                 Var.click_count += T
+#                 t.sleep(1)
+#                 window['COUNT'].update(f'{format_num(Var.click_count)}')
+#                 if event in (sg.WIN_CLOSED, 'Exit Game'):
+#                     break
 class Menu:
     check_play = True
     def menu_window(menu_layout, menu_window):
-        
         while True:
             event, values = menu_window.read()
             if event in (sg.WIN_CLOSED, 'Exit Game'):
@@ -178,7 +172,7 @@ class Menu:
             if event == 'Start':
                 break
         menu_window.close()
-
+        
 class Main:
     
     def main_window(layout, window):
@@ -215,15 +209,20 @@ class Main:
                 window[upgrade].update(disabled=(True if Var.click_count < Upgrade.tiers[upgrade][0] * next_multi_value else False))
                 if event == upgrade:
                     Upgrade.Template(event, upgrade)
+                    window[upgrade].update(disabled=(True if Var.click_count < Upgrade.tiers[upgrade][0] * next_multi_value else False))
                     
             Upgrade.upgradeTimes(event, 'multi')
+            
+            # for T in Autos.tiers:
+            #     if event == T:
+            #         Autos.autoclick(event, Autos.tiers[T])
             
         # diamonds trigger
             if Var.count == Var.random_count:
                 diamonds_win = r.randint(1,100)
                 Var.diamonds += diamonds_win
                 
-                sg.popup(f'You found {diamonds_win} diamonds!', text_color='aqua', auto_close= True, no_titlebar= True, auto_close_duration= 0.8, button_type= 5)
+                sg.popup(f'+{diamonds_win}❖', text_color='aqua', auto_close= True, no_titlebar= True, auto_close_duration= 0.8, button_type= 5)
                 Var.count = 0
                 Var.random_count = r.randint(1,100)
                 window['diamonds'].update(f'❖{format_num(Var.diamonds)}', font=('Leelawadee UI', 15), text_color= 'aqua')
@@ -250,7 +249,7 @@ class Boss:
 
             [sg.Text('', pad= (250,50)),sg.Button('Surrender', button_color= 'red')]
         ]
-        boss_window = sg.Window(f'{boss_name}', boss_layout, size=(600, 300), resizable= False, auto_close= True, location=(450,270))
+        boss_window = sg.Window(f'Boss Fight - {boss_name}', boss_layout, size=(600, 300), resizable = False, location=(450,270))
             
         while True:
             event, values = boss_window.read()
@@ -260,7 +259,7 @@ class Boss:
                 Var.click_crit += 1
                 boss_window['bossHP'].update(Var.boss_hp)
                 boss_window['bossHPvalue'].update(f' HP Left: {format_num(Var.boss_hp)}')
-            
+
             if Var.click_crit == Var.random_crit:
                 Var.boss_hp -= Var.click_value*10
                 boss_window['bossHP'].update(Var.boss_hp)
@@ -300,7 +299,7 @@ menu_layout = [
         [sg.Text(' ', pad= (250,1)), sg.Button('Exit Game', size= (15,1), button_color= 'red', mouseover_colors='darkred', font= ('Leelawadee UI', 13))]
         ]
 
-menu_window = sg.Window('Clicker Game GUI', menu_layout, size = (1200, 650), resizable= False, no_titlebar= False, location=(160,70))  # menu window
+menu_window = sg.Window('Clicker Game GUI', menu_layout, size = (1200, 650), resizable= False, no_titlebar= True, location=(160,70))  # menu window
 
 upgrades_column = [
     [sg.Text(pad=(0,15)),
@@ -392,7 +391,8 @@ layout = [
     sg.Button('Exit Game', size = (10, 1), button_color= 'red', mouseover_colors='darkred')]
 ]
 
-window = sg.Window('Clicker Game GUI', layout, size = (1200, 650), resizable= False, no_titlebar= False, location=(160,70))
+window = sg.Window('Clicker Game GUI', layout, size = (1200, 650), resizable= False, no_titlebar= True, location=(160,70))
+
 # open menu window
 Menu.menu_window(menu_layout, menu_window)
 
