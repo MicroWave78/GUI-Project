@@ -1,2 +1,2 @@
 Repo for second year, first semester project for final grade.
-A GUI in python using PySimpleGUI.
+A Clicker GUI game thing in python using PySimpleGUI.
